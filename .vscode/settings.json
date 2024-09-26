@@ -1,0 +1,33 @@
+{
+    // Auto-format the code when saving (for all file types)
+    "editor.formatOnSave": true,
+
+    // Set Prettier as the default formatter for JavaScript and HTML
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[html]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+
+    // Enable tab size of 2 spaces for cleaner code indentation
+    "editor.tabSize": 2,
+
+    // Trim trailing whitespace when saving a file
+    "files.trimTrailingWhitespace": true,
+
+    // Ensure a new line at the end of the file when saving
+    "files.insertFinalNewline": true,
+
+    // Enable word wrapping in the editor
+    "editor.wordWrap": "on",
+
+    // Show line numbers in the editor
+    "editor.lineNumbers": "on",
+
+    // Enable auto-closing brackets for convenience
+    "editor.autoClosingBrackets": "always",
+
+    // Enable bracket pair colorization for easier readability
+    "editor.bracketPairColorization.enabled": true
+}
