@@ -22,7 +22,7 @@ let noiseSlider,
   powerOfLoveSlider,
   attractionDistanceSlider,
   influenceDistanceSlider;
-const numParticles = 5000;
+const numParticles = 2500;
 const maxSpeed = 1.0;
 const recoverySpeed = 0.0001;
 let uiVerticalOffset = 50;
@@ -58,7 +58,7 @@ function setup() {
   attractionDistanceSlider.position(10, uiVerticalOffset + 120); // Position it below the noise slider
   attractionDistanceSlider.style("width", "200px");
 
-  influenceDistanceSlider = createSlider(0, 100, 50, 1);
+  influenceDistanceSlider = createSlider(0, 100, 25, 1);
   influenceDistanceSlider.position(10, uiVerticalOffset + 170); // Position it below the noise slider
   influenceDistanceSlider.style("width", "200px");
 
@@ -66,8 +66,7 @@ function setup() {
   for (let i = 0; i < numParticles; i++) {
     let x = random(width);
     let y = random(height);
-    let charge = random(-0.25, 1.0);
-    // let color = [random(255), random(255), random(255)];
+    let charge = random(-1.0, 1.0);
     let color = img.get(x, y);
     particles.push({ x, y, color, charge });
     particlePositions.push([x, y]);
@@ -143,6 +142,7 @@ const interactParticles = gpu
     let orR = originalColors[index][0];
     let orG = originalColors[index][1];
     let orB = originalColors[index][2];
+    let c = charges[index];
 
     for (let i = 0; i < this.constants.numParticles; i++) {
       if (i !== this.thread.x) {
@@ -164,10 +164,14 @@ const interactParticles = gpu
             r = r * (1 - a) + or * a;
             g = g * (1 - a) + og * a;
             b = b * (1 - a) + ob * a;
+            c += this.constants.recoverySpeed;
+            c = min(1.0, c);
           } else {
             r = r * (1 - a);
             g = g * (1 - a);
             b = b * (1 - a);
+            c -= this.constants.recoverySpeed;
+            c = max(-1.0, c);
           }
         } else {
           const a = this.constants.recoverySpeed;
@@ -178,14 +182,14 @@ const interactParticles = gpu
       }
     }
 
-    return [r, g, b];
+    return [r, g, b, c];
   })
   .setOutput([numParticles])
   .setConstants({ numParticles, recoverySpeed });
 
 // Draw loop
 function draw() {
-  background(0);
+  background(16);
 
   // Display the current noise and power of love values above the sliders
   fill(255);
@@ -231,7 +235,7 @@ function draw() {
   velocities = movedParticles.map((p) => [p[2], p[3]]);
 
   // Interact particles using the GPU
-  const newColors = interactParticles(
+  const results = interactParticles(
     particlePositions,
     particleColors,
     particleOriginalColors,
@@ -239,16 +243,33 @@ function draw() {
     influenceDistance,
     powerOfLove
   );
-  particleColors = newColors.map((c) => [c[0], c[1], c[2]]);
+  particleColors = results.map((p) => [p[0], p[1], p[2]]);
+  particleCharges = results.map((p) => [p[3]]);
 
   // Draw particles on the canvas
   for (let i = 0; i < numParticles; i++) {
-    fill(particleColors[i][0], particleColors[i][1], particleColors[i][2]);
+    a = 1.0;
+    fill(
+      a * particleColors[i][0],
+      a * particleColors[i][1],
+      a * particleColors[i][2]
+    );
     noStroke();
     ellipse(
       particlePositions[i][0],
       particlePositions[i][1],
-      5.0 + 10.0 * abs(particleCharges[i])
+      10.0 + 8.0 * abs(particleCharges[i])
+    );
+
+    noFill();
+    c = particleCharges[i];
+    if (c > 0) stroke(c * 255, c * 255, c * 255);
+    else stroke(-c * 255, 0, 0);
+    strokeWeight(0.2);
+    ellipse(
+      particlePositions[i][0],
+      particlePositions[i][1],
+      10.0 + 10.0 * abs(particleCharges[i])
     );
   }
 }
