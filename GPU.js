@@ -3,7 +3,7 @@ const gpu = new GPU();
 // Global variables
 let particles = [];
 let noiseSlider, powerOfLoveSlider, attractionDistanceSlider, influenceDistanceSlider;
-const numParticles = 2000;
+const numParticles = 5000;
 const maxSpeed = 1.0;
 const recoverySpeed = 0.0001;
 let uiVerticalOffset = 50;
@@ -15,9 +15,16 @@ let particleOriginalColors = [];
 let particleCharges = [];
 let velocities = [];
 
+function preload() {
+  // Load the image
+  img = loadImage('./image.jpg');  // Replace with the actual path to your image
+}
+
 // Setup function to initialize sliders and particles
 function setup() {
   createCanvas(windowWidth, windowHeight);
+
+  img.resize(width, height);
   
   // Sliders for user control
   noiseSlider = createSlider(0, 10, 1, 0.1);
@@ -40,8 +47,9 @@ function setup() {
   for (let i = 0; i < numParticles; i++) {
     let x = random(width);
     let y = random(height);
-    let charge = random(-0.5, 1.0);
-    let color = [random(255), random(255), random(255)];
+    let charge = random(-0.25, 1.0);
+    // let color = [random(255), random(255), random(255)];
+    let color = img.get(x, y);
     particles.push({ x, y, color, charge });
     particlePositions.push([x, y]);
     particleColors.push(color);
@@ -52,7 +60,7 @@ function setup() {
 }
 
 // GPU Kernel to handle particle movement
-const moveParticles = gpu.createKernel(function(positions, velocities, noise, attractionDistance, width, height) {
+const moveParticles = gpu.createKernel(function(positions, velocities, charges, noise, attractionDistance, width, height) {
   const x1 = positions[this.thread.x][0] + velocities[this.thread.x][0] * noise;
   const y1 = positions[this.thread.x][1] + velocities[this.thread.x][1] * noise;
 
@@ -65,7 +73,7 @@ const moveParticles = gpu.createKernel(function(positions, velocities, noise, at
             const y2 = positions[i][1];
             const dist = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
             if (dist < attractionDistance) {  // Attraction range
-                let attractionForce = (attractionDistance - dist) / attractionDistance;
+                let attractionForce = (attractionDistance - dist) / attractionDistance * abs(charges[i]);
                 vx += (x2 - x1) * attractionForce * 0.01;
                 vy += (y2 - y1) * attractionForce * 0.01;
 
@@ -149,7 +157,7 @@ function draw() {
   const influenceDistance = influenceDistanceSlider.value();
 
   // Move particles using the GPU
-  const movedParticles = moveParticles(particlePositions, velocities, noise, attractionDistance, width, height);
+  const movedParticles = moveParticles(particlePositions, velocities, particleCharges, noise, attractionDistance, width, height);
   particlePositions = movedParticles.map(p => [p[0], p[1]]);
   velocities = movedParticles.map(p => [p[2], p[3]]);
 
@@ -161,6 +169,6 @@ function draw() {
   for (let i = 0; i < numParticles; i++) {
     fill(particleColors[i][0], particleColors[i][1], particleColors[i][2]);
     noStroke();
-    ellipse(particlePositions[i][0], particlePositions[i][1], 5.0 + 20.0 * abs(particleCharges[i]));
+    ellipse(particlePositions[i][0], particlePositions[i][1], 5.0 + 10.0 * abs(particleCharges[i]));
   }
 }
